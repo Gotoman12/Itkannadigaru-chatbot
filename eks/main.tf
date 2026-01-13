@@ -8,64 +8,64 @@ provider "aws" {
 ############################
 # VPC
 ############################
-resource "aws_vpc" "itkannadigaru_vpc" {
+resource "aws_vpc" "javamysqldemo_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "itkannadigaru_vpc"
+    Name = "javamysqldemo_vpc"
   }
 }
 
 ############################
 # Subnets (2 public subnets)
 ############################
-resource "aws_subnet" "itkannadigaru_subnet" {
+resource "aws_subnet" "javamysqldemo_subnet" {
   count = 2
-  vpc_id = aws_vpc.itkannadigaru_vpc.id
-  cidr_block = cidrsubnet(aws_vpc.itkannadigaru_vpc.cidr_block, 8, count.index)
+  vpc_id = aws_vpc.javamysqldemo_vpc.id
+  cidr_block = cidrsubnet(aws_vpc.javamysqldemo_vpc.cidr_block, 8, count.index)
 
   availability_zone = element(["us-east-1a", "us-east-1b"], count.index)
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "itkannadigaru_subnet-${count.index}"
+    Name = "javamysqldemo_subnet-${count.index}"
   }
 }
 
 ############################
 # Internet Gateway
 ############################
-resource "aws_internet_gateway" "itkannadigaru_igw" {
-  vpc_id = aws_vpc.itkannadigaru_vpc.id
+resource "aws_internet_gateway" "javamysqldemo_igw" {
+  vpc_id = aws_vpc.javamysqldemo_vpc.id
 
   tags = {
-    Name = "itkannadigaru_igw"
+    Name = "javamysqldemo_igw"
   }
 }
 
 ############################
 # Route Table
 ############################
-resource "aws_route_table" "itkannadigaru_rt" {
-  vpc_id = aws_vpc.itkannadigaru_vpc.id
+resource "aws_route_table" "javamysqldemo_rt" {
+  vpc_id = aws_vpc.javamysqldemo_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.itkannadigaru_igw.id
+    gateway_id = aws_internet_gateway.javamysqldemo_igw.id
   }
 
   tags = {
-    Name = "itkannadigaru_route_table"
+    Name = "javamysqldemo_route_table"
   }
 }
 
 ############################
 # Route Table Association
 ############################
-resource "aws_route_table_association" "itkannadigaru_rt_assoc" {
+resource "aws_route_table_association" "javamysqldemo_rt_assoc" {
   count = 2
-  subnet_id = aws_subnet.itkannadigaru_subnet[count.index].id
-  route_table_id = aws_route_table.itkannadigaru_rt.id
+  subnet_id = aws_subnet.javamysqldemo_subnet[count.index].id
+  route_table_id = aws_route_table.javamysqldemo_rt.id
 }
 
 ############################
@@ -73,8 +73,8 @@ resource "aws_route_table_association" "itkannadigaru_rt_assoc" {
 ############################
 
 # EKS Cluster Security Group
-resource "aws_security_group" "itkannadigaru_cluster_sg" {
-  vpc_id = aws_vpc.itkannadigaru_vpc.id
+resource "aws_security_group" "javamysqldemo_cluster_sg" {
+  vpc_id = aws_vpc.javamysqldemo_vpc.id
 
   egress {
     from_port = 0
@@ -84,13 +84,13 @@ resource "aws_security_group" "itkannadigaru_cluster_sg" {
   }
 
   tags = {
-    Name = "itkannadigaru-cluster-sg"
+    Name = "javamysqldemo-cluster-sg"
   }
 }
 
 # Worker Node Security Group
-resource "aws_security_group" "itkannadigaru_node_sg" {
-  vpc_id = aws_vpc.itkannadigaru_vpc.id
+resource "aws_security_group" "javamysqldemo_node_sg" {
+  vpc_id = aws_vpc.javamysqldemo_vpc.id
 
   ingress {
     from_port = 0
@@ -107,15 +107,15 @@ resource "aws_security_group" "itkannadigaru_node_sg" {
   }
 
   tags = {
-    Name = "itkannadigaru-node-sg"
+    Name = "javamysqldemo-node-sg"
   }
 }
 
 ############################
 # IAM Role - EKS Cluster
 ############################
-resource "aws_iam_role" "itkannadigaru_eks_cluster_role" {
-  name = "itkannadigaru_eks_cluster_role"
+resource "aws_iam_role" "javamysqldemo_eks_cluster_role" {
+  name = "javamysqldemo_eks_cluster_role"
 
   assume_role_policy = <<EOF
 {
@@ -134,15 +134,15 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_policy" {
-  role       = aws_iam_role.itkannadigaru_eks_cluster_role.name
+  role       = aws_iam_role.javamysqldemo_eks_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 ############################
 # IAM Role - Worker Nodes
 ############################
-resource "aws_iam_role" "itkannadigaru_eks_node_role" {
-  name = "itkannadigaru_eks_node_role"
+resource "aws_iam_role" "javamysqldemo_eks_node_role" {
+  name = "javamysqldemo_eks_node_role"
 
   assume_role_policy = <<EOF
 {
@@ -162,30 +162,30 @@ EOF
 
 # Worker node required policies
 resource "aws_iam_role_policy_attachment" "node_worker_policy" {
-  role       = aws_iam_role.itkannadigaru_eks_node_role.name
+  role       = aws_iam_role.javamysqldemo_eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "node_cni_policy" {
-  role       = aws_iam_role.itkannadigaru_eks_node_role.name
+  role       = aws_iam_role.javamysqldemo_eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
 resource "aws_iam_role_policy_attachment" "node_registry_policy" {
-  role       = aws_iam_role.itkannadigaru_eks_node_role.name
+  role       = aws_iam_role.javamysqldemo_eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
 ############################
 # EKS Cluster
 ############################
-resource "aws_eks_cluster" "itkannadigaru" {
-  name     = "itkannadigaru-cluster"
-  role_arn = aws_iam_role.itkannadigaru_eks_cluster_role.arn
+resource "aws_eks_cluster" "javamysqldemo" {
+  name     = "javamysqldemo-cluster"
+  role_arn = aws_iam_role.javamysqldemo_eks_cluster_role.arn
 
   vpc_config {
-    subnet_ids         = aws_subnet.itkannadigaru_subnet[*].id
-    security_group_ids = [aws_security_group.itkannadigaru_cluster_sg.id]
+    subnet_ids         = aws_subnet.javamysqldemo_subnet[*].id
+    security_group_ids = [aws_security_group.javamysqldemo_cluster_sg.id]
   }
 
   depends_on = [
@@ -196,12 +196,12 @@ resource "aws_eks_cluster" "itkannadigaru" {
 ############################
 # EKS Node Group
 ############################
-resource "aws_eks_node_group" "itkannadigaru" {
-  cluster_name    = aws_eks_cluster.itkannadigaru.name
-  node_group_name = "itkannadigaru-node-group"
-  node_role_arn   = aws_iam_role.itkannadigaru_eks_node_role.arn
+resource "aws_eks_node_group" "javamysqldemo" {
+  cluster_name    = aws_eks_cluster.javamysqldemo.name
+  node_group_name = "javamysqldemo-node-group"
+  node_role_arn   = aws_iam_role.javamysqldemo_eks_node_role.arn
 
-  subnet_ids = aws_subnet.itkannadigaru_subnet[*].id
+  subnet_ids = aws_subnet.javamysqldemo_subnet[*].id
 
   scaling_config {
     desired_size = 3
@@ -213,7 +213,7 @@ resource "aws_eks_node_group" "itkannadigaru" {
 
   remote_access {
     ec2_ssh_key               = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.itkannadigaru_node_sg.id]
+    source_security_group_ids = [aws_security_group.javamysqldemo_node_sg.id]
   }
 
   depends_on = [
